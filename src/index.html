@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light" data-palette="emerald" data-density="comfortable" data-fs="m">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#edf0ee" id="metaTheme">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="لوحة متابعة شخصية لقراءة القرآن وختماته: سجل يومي، خريطة قراءة، أجزاء وأحزاب وأرباع، وإحصاءات — تعمل دون اتصال ولا ترسل بياناتك لأي خادم.">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="رحلتي مع القرآن">
+<title>رحلتي مع القرآن</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%231b6b5f'/%3E%3Cpath d='M18 18H46V46H18Z M51.8 32L32 12.2L12.2 32L32 51.8Z' fill='none' stroke='white' stroke-width='3' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
+<!-- لا يوجد أي مورد خارجي: لا خطوط ولا مكتبات ولا طلبات شبكة. البيانات كلها في متصفحك. -->
+
+</head>
+<body>
+<a class="skip" href="#main">الانتقال إلى المحتوى</a>
+<div id="banner" class="banner" role="status" hidden></div>
+
+<header class="top">
+  <div class="wrap top-in">
+    <div class="brand">
+      <span class="mark" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M18 18H46V46H18Z M51.8 32L32 12.2L12.2 32L32 51.8Z"/></svg></span>
+      <div>
+        <h1>رحلتي مع القرآن</h1>
+        <p>متابعة القراءة والختمات</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button type="button" class="icon-btn" data-act="theme" id="btnTheme" aria-label="تبديل المظهر بين الفاتح والداكن"></button>
+      <button type="button" class="icon-btn" data-act="settings" aria-label="الإعدادات" id="btnSettings"></button>
+    </div>
+  </div>
+</header>
+
+<noscript><p class="wrap" style="padding:20px">يتطلب هذا التطبيق تفعيل JavaScript في المتصفح.</p></noscript>
+
+<main class="wrap grid" id="main">
+
+  <!-- التقدم -->
+  <section class="card hero t1 d4 m-hero" aria-labelledby="hP">
+    <h2 class="ct" id="hP">تقدّم الختمة <span class="badge" id="kBadge">ختمة #1</span></h2>
+    <div class="ringwrap">
+      <svg class="ring" viewBox="0 0 220 220" role="img" id="ringSvg" aria-label="">
+        <g id="ticks"></g>
+        <circle class="ring-bg" cx="110" cy="110" r="78"/>
+        <circle class="ring-fg" id="ringFg" cx="110" cy="110" r="78" transform="rotate(-90 110 110)"/>
+      </svg>
+      <div class="ring-center">
+        <div class="pct" id="pct">0%</div>
+        <div class="pgs" id="pgsTxt"></div>
+      </div>
+    </div>
+    <dl class="mini" id="miniStats"></dl>
+  </section>
+
+  <!-- قراءة اليوم -->
+  <section class="card t1 d4 m-today" aria-labelledby="hT">
+    <h2 class="ct" id="hT">قراءة اليوم <span class="badge" id="todayDate"></span></h2>
+    <div class="today-num"><span class="big" id="todayPages">0</span><span class="of">/ <span class="num" id="todayTarget">2</span> صفحة</span></div>
+    <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="نسبة تحقيق هدف اليوم" id="todayBarBox"><i id="todayBar" style="width:0"></i></div>
+    <p class="status" id="todayStatus" aria-live="polite"></p>
+
+    <label class="lbl" for="amt">كم صفحة قرأت؟ اكتب العدد أو استعمل + و −</label>
+    <div class="stepper" dir="ltr">
+      <button type="button" class="step" data-act="amtMinus" id="amtMinus" aria-label="إنقاص العدد">−</button>
+      <input type="number" inputmode="numeric" step="1" class="amt-in" id="amt" value="2" autocomplete="off" enterkeyhint="done" aria-describedby="amtHint">
+      <button type="button" class="step" data-act="amtPlus" id="amtPlus" aria-label="زيادة العدد">+</button>
+    </div>
+    <button type="button" class="btn pri wide big" data-act="rec" id="btnRec">تسجيل</button>
+    <p class="hint" id="amtHint"></p>
+
+    <span class="lbl">إضافة سريعة</span>
+    <div class="chips" role="group" aria-label="إضافة سريعة" dir="ltr">
+      <button type="button" class="chip" data-add="1">+1</button>
+      <button type="button" class="chip" data-add="2">+2</button>
+      <button type="button" class="chip" data-add="5">+5</button>
+      <button type="button" class="chip" data-add="10">+10</button>
+    </div>
+    <button type="button" class="btn wide" data-act="rec2" id="btnRec2">تسجيل بالسورة أو الجزء أو الحزب أو الربع</button>
+    <div class="today-foot">
+      <button type="button" class="link" data-act="logAll">التسجيلات</button>
+      <button type="button" class="link" data-act="undo" id="btnUndo">تراجع عن آخر تسجيل</button>
+    </div>
+  </section>
+
+  <div class="stack d4">
+    <!-- أكمل القراءة -->
+    <button type="button" class="cont m-cont" data-act="cont" id="btnCont">
+      <span class="cont-body">
+        <span class="cont-t">أكمل القراءة</span>
+        <span class="cont-l" id="contLast"></span>
+        <span class="cont-n" id="contNext"></span>
+        <span class="cont-n cont-a" id="contAlt" hidden></span>
+        <span class="cont-s" id="contWhere"></span>
+      </span>
+      <span class="cont-arrow" aria-hidden="true" id="contArrow"></span>
+    </button>
+
+    <!-- الموعد المتوقع -->
+    <section class="card m-est" aria-labelledby="hE">
+      <h2 class="ct" id="hE">الموعد المتوقع للختم</h2>
+      <div class="est-date" id="estDate">—</div>
+      <p class="sub" id="estSub"></p>
+      <p class="est-rem">متبقٍ: <span class="num" id="estRem">—</span> صفحة</p>
+    </section>
+  </div>
+
+  <!-- الأجزاء -->
+  <section class="card t2 d8" aria-labelledby="hJ">
+    <h2 class="ct" id="hJ">تقدّم الأجزاء والأحزاب</h2>
+    <div class="legend" aria-hidden="true">
+      <span><i class="lg-pie n"></i> لم يبدأ</span>
+      <span><i class="lg-pie h"></i> قيد القراءة</span>
+      <span><i class="lg-pie f"></i> مكتمل</span>
+    </div>
+    <div class="juz-grid" id="juzGrid" role="group" aria-label="أجزاء القرآن الثلاثون"></div>
+    <div class="detail" id="juzDetail" aria-live="polite"></div>
+  </section>
+
+  <div class="stack d4">
+    <!-- هدفي -->
+    <section class="card" aria-labelledby="hG">
+      <h2 class="ct" id="hG">هدفي</h2>
+      <div class="js-goalInputs"></div>
+      <dl class="kv" id="goalStats"></dl>
+      <p class="note" id="goalMsg" aria-live="polite"></p>
+    </section>
+    <!-- الاستمرارية -->
+    <section class="card" aria-labelledby="hS">
+      <h2 class="ct" id="hS">الاستمرارية</h2>
+      <div class="streak-row">
+        <div><div class="streak-n num" id="stCur">0</div><div class="streak-l">الحالية (أيام متتالية)</div></div>
+        <div><div class="streak-n num" id="stLong" style="font-size:1.6rem;color:var(--muted)">0</div><div class="streak-l">الأطول</div></div>
+      </div>
+      <div class="dots" id="dots" aria-label="آخر سبعة أيام"></div>
+    </section>
+  </div>
+
+  <!-- الإحصائيات -->
+  <section class="card" aria-labelledby="hSt">
+    <h2 class="ct" id="hSt">إحصائيات القراءة</h2>
+    <div class="stats" id="stats"></div>
+    <p class="note">المتوسطات محسوبة على آخر 30 يومًا (أو منذ أول تسجيل إن كان أحدث).</p>
+  </section>
+
+  <!-- رسوم -->
+  <section class="card t1 d6" aria-labelledby="hC1">
+    <div class="card-head"><h2 class="ct" id="hC1">القراءة اليومية</h2>
+      <div class="seg sm" role="group" aria-label="مدى الرسم اليومي">
+        <button type="button" data-ui="dr:7">7 أيام</button><button type="button" data-ui="dr:14">14 يومًا</button><button type="button" data-ui="dr:30">30 يومًا</button>
+      </div></div>
+    <div class="chart-box" id="chartDaily"></div>
+  </section>
+  <section class="card t1 d6" aria-labelledby="hC2">
+    <div class="card-head"><h2 class="ct" id="hC2">الحصيلة الأسبوعية والشهرية</h2>
+      <div class="seg sm" role="group" aria-label="نوع الحصيلة">
+        <button type="button" data-ui="per:w">أسبوعي</button><button type="button" data-ui="per:m">شهري</button>
+      </div></div>
+    <div class="chart-box" id="chartPer"></div>
+  </section>
+  <section class="card d5" aria-labelledby="hC3">
+    <h2 class="ct" id="hC3">مسار الختمة الحالية</h2>
+    <div class="chart-box" id="chartOverall"></div>
+  </section>
+
+  <!-- سجل القراءة -->
+  <section class="card d7" aria-labelledby="hH">
+    <h2 class="ct" id="hH">سجل القراءة</h2>
+    <div id="heat"></div>
+    <div class="detail" id="heatDetail" aria-live="polite"></div>
+  </section>
+
+  <!-- السور -->
+  <section class="card t1 d7" aria-labelledby="hSu">
+    <h2 class="ct" id="hSu">تقدم السور</h2>
+    <div class="tools">
+      <input type="search" class="inp" id="surahQ" placeholder="ابحث باسم السورة أو رقمها" aria-label="بحث في السور" autocomplete="off">
+      <div class="seg sm" role="group" aria-label="تصفية السور">
+        <button type="button" data-ui="sf:all">الكل</button><button type="button" data-ui="sf:cur">جارية</button><button type="button" data-ui="sf:done">مكتملة</button>
+      </div>
+    </div>
+    <p class="sub" style="margin-bottom:8px">اضغط على أي سورة لتسجيلها.</p>
+    <ul class="sl" id="surahList"></ul>
+    <div class="expand-row"><button type="button" class="btn" data-act="surahToggle" id="surahToggle">عرض جميع السور</button></div>
+  </section>
+
+  <div class="stack d5">
+    <!-- آخر التسجيلات -->
+    <section class="card" aria-labelledby="hR">
+      <div class="card-head"><h2 class="ct" id="hR">آخر التسجيلات</h2>
+        <button type="button" class="btn" data-act="logAll">عرض الكل</button></div>
+      <ul class="er-list" id="recent"></ul>
+    </section>
+    <!-- الختمات -->
+    <section class="card" aria-labelledby="hK">
+      <div class="card-head"><h2 class="ct" id="hK">سجل الختمات</h2>
+        <button type="button" class="btn" data-act="newk">بدء ختمة جديدة</button></div>
+      <ul class="hist" id="hist"></ul>
+    </section>
+  </div>
+
+</main>
+
+<div class="modal" id="modal" hidden></div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<input type="file" id="fileIn" accept=".json,application/json" hidden>
+
+<script src="app.js"></script>
+
+</body>
+</html>
