@@ -1344,6 +1344,7 @@ git add -A && git commit
 
 * **الفرع:** `arena/b05976e5-quran` (من `main` عند `b01c7f3`)
 * **الإصدار:** 3.1 · **البناء:** `c54af65b927f` · `index.html` = 152,544 بايت
+* **النشر:** `vercel.json` → موقع ثابت خالص (بلا install ولا build) · Vercel ✅ · GitHub Actions CI ✅
 * **الاختبارات:** `test2` 40 · `test3` 52 · `test4` 51 · `test5` 61 · `test6` 69 = **273 فحصًا، 0 فشل**
 * **التحقق:** `verify_editions` ✓ · `check_offline` ✓ · `gen_madinah` ✓ مطابق · `gen_shamarly` ✓ مطابق
 
@@ -1446,6 +1447,31 @@ git add -A && git commit
 
 **نتيجة القياس:** حالة صغيرة 553 → **265** حرفًا (‑52٪)، وحالة واقعية كبيرة 10,307 بايت →
 **687** بايت (‑**93٪**).
+
+### المرحلة هـ — إصلاح نشر Vercel 🔴 (كان مكسور من إضافة `package.json`)
+
+39. **اكتشاف العطل:** كل الـdeployments على فرع العمل رجعت `Vercel | failure |
+    "Deployment has failed"` — بينما `main` عند `b01c7f3` كان `success`.
+    **السبب:** قبل `package.json` كان Vercel شايف مستودعًا ثابتًا خالصًا فبيخدم الملفات زي ما هي.
+    أول ما `package.json` اتضاف (مع أدوات التحقق والاختبارات) بقى Vercel يعتبر المشروع **Node**،
+    فبيشغّل `npm install` ثم `npm run build` = `python3 tools/build.py` — والاتنين مش مصمّمين
+    لبيئة Vercel.
+40. **التشخيص:** `gh api .../commits/<sha>/status` بيدي الحالة والوصف بس (لوجات Vercel نفسها
+    محتاجة `npx vercel inspect --logs` وتوكن). فاستبعدت الاحتمالات بالقياس:
+    `build.py` سليم تحت `LC_ALL=C` (مفيش `UnicodeEncodeError`)، ومفيش `subprocess`/`git`/`os.environ`
+    في أي أداة، و`npm ci --dry-run` نجح. → المشكلة في **خطوتَي install/build نفسهما**، مش في الكود.
+41. **الإصلاح — `vercel.json`:**
+    ```json
+    { "framework": null, "buildCommand": "", "installCommand": "", "outputDirectory": "." }
+    ```
+    سلسلة فاضية = **تعطيل** الخطوة (موثّق من Vercel). وده منطقي أصلًا: `index.html`
+    **أثر بناء متعمِل commit**، وCI بيأكد freshness بـ`build.py --check` — فمفيش داعي للبناء
+    على Vercel. رجعنا بالظبط لسلوك `b01c7f3` اللي كان شغّال.
+42. **النتيجة:** `Vercel | success | Deployment has completed` على نفس الفرع، و`CI | success`
+    (9 خطوات) على الـpull request.
+
+> ⚠️ **قاعدة للمستقبل:** أي ملف `package.json` في جذر مستودع ثابت على Vercel هيحوّله لمشروع Node.
+> لو مش عايز كده، لازم `vercel.json` يقول صراحةً «مفيش install ولا build».
 
 ### ما استُبعد (بقرار)
 

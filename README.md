@@ -91,6 +91,7 @@ src/                    ← المصدر: index.html + styles.css + app.js
 data/editions.json      ← حدود السور والأرباع والأجزاء لكل طبعة
 tools/                  ← build.py · verify_editions.py · check_offline.py · gen_*
 tests/                  ← 273 فحصًا آليًا (jsdom)
+vercel.json             ← النشر كموقع ثابت خالص (بلا install ولا build)
 .github/workflows/      ← CI
 docs/DATA-SOURCES.md    ← مصادر البيانات والتحقق منها
 HANDOVER.md             ← 📖 التوثيق الكامل
@@ -101,9 +102,19 @@ HANDOVER.md             ← 📖 التوثيق الكامل
 * **الإصدار:** 3.1 · **البناء:** محدّث
 * **الاختبارات:** 273 فحصًا، 0 فشل (`test2` 40 · `test3` 52 · `test4` 51 · `test5` 61 · `test6` 69)
 * **التحقق:** `verify_editions` ✓ · `check_offline` ✓ · `gen_madinah` ✓ مطابق · `gen_shamarly` ✓ مطابق
+* **النشر:** Vercel ✅ · GitHub Actions CI ✅ (9 خطوات)
 * **الأعطال المُصلَحة:** 1 خطير (P0) + 5 مهمة (P1) + 7 ثانوية (P2) + 4 سلوك (UX) — كلها بحراسات اختبارية
 * **المفتوح:** مراجعة بصرية لـ3 أرباع شمرلي + 4 قرارات اختيارية — انظر
   [§13 في HANDOVER.md](HANDOVER.md#13-ما-لم-يُنفَّذ-بعد-قائمة-العمل-المفتوحة)
+
+## النشر
+
+الموقع منشور على **Vercel** من فرع `main`. `vercel.json` بيخلّيه يُنشر **كموقع ثابت خالص**:
+مفيش `npm install` ولا `npm run build` على Vercel — `index.html` أثر بناء متعمِل commit أصلًا،
+وCI بيأكد إنه محدّث قبل أي دمج. يعني النشر = رفع الملفات وبس (أسرع وأقل عرضة للكسر).
+
+> ⚠️ لو شلت `vercel.json`، Vercel هيشوف `package.json` ويعتبر المشروع Node ويشغّل
+> install وbuild — وده **هيكسر النشر**.
 
 ## متطلبات
 
