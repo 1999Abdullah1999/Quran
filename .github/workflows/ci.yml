@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    name: تحقق + بناء + اختبارات
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dev dependencies (jsdom, quran-meta)
+        run: npm ci
+
+      - name: Validate data/editions.json
+        run: python3 tools/verify_editions.py -v
+
+      - name: Verify index.html is up to date with src/
+        run: python3 tools/build.py --check
+
+      - name: Regenerate Madinah data from quran-meta and compare
+        run: node tools/gen_madinah.mjs
+
+      - name: Tests
+        run: |
+          node tests/test2.cjs
+          node tests/test3.cjs
+          node tests/test4.cjs
+          node tests/test5.cjs
+          node tests/test6.cjs
+
+      - name: No external resources in the built file
+        run: python3 tools/check_offline.py index.html
+
+      - name: Built file is self-contained (no link/script src, no __DATA__)
+        run: |
+          python3 - <<'PY'
+          import io, re, sys
+          s = io.open('index.html', encoding='utf-8').read()
+          bad = []
+          if re.search(r'<link[^>]+rel\s*=\s*"stylesheet"', s):
+              bad.append('<link rel="stylesheet"> — الـCSS لازم يكون مضمّنًا')
+          if re.search(r'<script[^>]+\bsrc\s*=', s):
+              bad.append('<script src> — الـJS لازم يكون مضمّنًا')
+          if '__DATA__' in s:
+              bad.append('العلامة __DATA__ لم تُستبدل')
+          if bad:
+              print('\u2717 ' + ' | '.join(bad)); sys.exit(1)
+          print('\u2713 index.html مكتفٍ ذاتيًا: CSS وJS والبيانات كلها مضمّنة')
+          PY

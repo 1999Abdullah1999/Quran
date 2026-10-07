@@ -1,0 +1,32 @@
+{
+  "name": "رحلتي مع القرآن",
+  "short_name": "رحلتي",
+  "description": "لوحة متابعة شخصية لقراءة القرآن وختماته — تعمل دون اتصال وبياناتك تبقى في متصفحك.",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#edf0ee",
+  "theme_color": "#edf0ee",
+  "categories": [
+    "books",
+    "utilities"
+  ],
+  "version": "c54af65b927f",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
