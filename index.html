@@ -324,6 +324,8 @@ input.inp.mono{padding-block:10px}
 .tools .inp{flex:1;min-width:160px}
 .sl{list-style:none;display:grid;gap:6px}
 .sl.exp{max-height:480px;overflow:auto;padding-inline-end:4px}
+/* نص للقارئ الصوتي فقط: لا تزحه خارج الشاشة بإزاحة ضخمة — في صفحة RTL يمدّ عرض الصفحة آلاف البكسلات */
+.vh{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
 .sr{display:grid;grid-template-columns:34px 1fr auto;grid-template-areas:"n name p" "n bar bar";gap:2px 10px;align-items:center;padding:8px 10px;border-radius:14px;border:1px solid var(--line);background:var(--soft-2);width:100%;text-align:start;min-height:56px}
 .sr:hover{border-color:var(--accent)}
 .sr .n{grid-area:n;width:30px;height:30px;border-radius:50%;background:var(--soft);display:grid;place-items:center;font-size:.78rem;font-weight:700;color:var(--muted)}
@@ -1775,7 +1777,7 @@ function renderStreak(){
   var h='';
   for(var i=6;i>=0;i--){
     var d=addDays(D.t,-i), on=(D.dm[d]||0)>0;
-    h+='<div class="dot'+(on?' on':'')+(i===0?' now':'')+'"><i></i><span>'+DAYS_S[parse(d).getDay()]+'<span style="position:absolute;left:-9999px">'+(on?': تمت القراءة':': لا قراءة')+'</span></span></div>';
+    h+='<div class="dot'+(on?' on':'')+(i===0?' now':'')+'"><i></i><span>'+DAYS_S[parse(d).getDay()]+'<span class="vh">'+(on?': تمت القراءة':': لا قراءة')+'</span></span></div>';
   }
   $('#dots').innerHTML=h;
 }

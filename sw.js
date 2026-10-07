@@ -1,5 +1,5 @@
 /* service worker — ناتج بناء، لا تعدّله يدويًا (المصدر: tools/build.py) */
-var CACHE = 'quran-rt-' + 'c54af65b927f';
+var CACHE = 'quran-rt-' + 'ac19d9cd3062';
 var SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon.svg'];
 
 self.addEventListener('install', function (e) {

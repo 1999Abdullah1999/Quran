@@ -1192,7 +1192,7 @@ function renderStreak(){
   var h='';
   for(var i=6;i>=0;i--){
     var d=addDays(D.t,-i), on=(D.dm[d]||0)>0;
-    h+='<div class="dot'+(on?' on':'')+(i===0?' now':'')+'"><i></i><span>'+DAYS_S[parse(d).getDay()]+'<span style="position:absolute;left:-9999px">'+(on?': تمت القراءة':': لا قراءة')+'</span></span></div>';
+    h+='<div class="dot'+(on?' on':'')+(i===0?' now':'')+'"><i></i><span>'+DAYS_S[parse(d).getDay()]+'<span class="vh">'+(on?': تمت القراءة':': لا قراءة')+'</span></span></div>';
   }
   $('#dots').innerHTML=h;
 }

@@ -14,14 +14,14 @@
     "verify": "python3 tools/verify_editions.py",
     "gen:madinah": "node tools/gen_madinah.mjs",
     "gen:shamarly": "python3 tools/gen_shamarly.py",
-    "test": "node tests/test2.cjs && node tests/test3.cjs && node tests/test4.cjs && node tests/test5.cjs && node tests/test6.cjs",
+    "test": "node tests/test2.cjs && node tests/test3.cjs && node tests/test4.cjs && node tests/test5.cjs && node tests/test6.cjs && node tests/test7.cjs",
     "test:2": "node tests/test2.cjs",
     "test:3": "node tests/test3.cjs",
     "test:4": "node tests/test4.cjs",
     "test:5": "node tests/test5.cjs",
-    "test:6": "node tests/test6.cjs",
+    "test:6": "node tests/test6.cjs && node tests/test7.cjs",
     "offline": "python3 tools/check_offline.py index.html",
-    "ci": "python3 tools/verify_editions.py && python3 tools/build.py --check && node tools/gen_madinah.mjs && python3 tools/check_offline.py index.html && node tests/test2.cjs && node tests/test3.cjs && node tests/test4.cjs && node tests/test5.cjs && node tests/test6.cjs"
+    "ci": "python3 tools/verify_editions.py && python3 tools/build.py --check && node tools/gen_madinah.mjs && python3 tools/check_offline.py index.html && node tests/test2.cjs && node tests/test3.cjs && node tests/test4.cjs && node tests/test5.cjs && node tests/test6.cjs && node tests/test7.cjs"
   },
   "devDependencies": {
     "jsdom": "^30.1.2",
