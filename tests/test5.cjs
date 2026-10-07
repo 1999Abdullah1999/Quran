@@ -222,7 +222,7 @@ function state(one){
   const js=fs.readFileSync('src/app.js','utf8');
   const used=new Set([...js.matchAll(/\$\('#([A-Za-z][\w-]*)'\)/g)].map(m=>m[1]));
   // عناصر تُنشأ ديناميكيًا داخل المودالات
-  const dynamic=new Set(['oEd','oPage','oGoal','oRange','eFrom','eTo','eDate','sPage','edNote','uFrom','uTo','uType','mT']);
+  const dynamic=new Set(['oEd','oPage','oGoal','oRange','eFrom','eTo','eDate','sPage','edNote','uFrom','uTo','uType','mT','shUrl','shCode','shIn','shInNote','cchk']);
   const missing=[...used].filter(x=>!ids.has(x)&&!dynamic.has(x));
   ok(missing.length===0,'لا مُعرِّفات مفقودة: '+missing.join(','));
   ok(I.errs.length===0,'no console errors at boot: '+I.errs.join('|'));

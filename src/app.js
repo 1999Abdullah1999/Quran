@@ -696,6 +696,7 @@ function openSettings(){
     '<div class="sec"><h3>المصحف الذي أقرأ منه</h3><p class="sub">عدد الصفحات وحدود السور والأجزاء والأحزاب والأرباع تتبع الطبعة المختارة. أرقام الصفحات هي نفسها المطبوعة في مصحفك.</p><div class="seg" role="group" aria-label="المصحف">'+edButtonsHTML(k.ed)+'</div><p class="note" id="edNote"></p></div>'+
     '<div class="sec"><h3>ما قرأته قبل استخدام التطبيق</h3><p class="sub">اكتب آخر صفحة أتممتها في هذه الختمة، فتُعدّ كل الصفحات من أول المصحف إليها مقروءة.</p><div class="fld" style="margin-top:8px"><span>حتى الصفحة</span><span style="display:inline-flex;gap:8px;align-items:center"><input class="inp" type="number" inputmode="numeric" min="'+P0+'" max="'+TOTAL+'" id="sPage" style="width:96px" placeholder="'+P0+'–'+TOTAL+'" '+(k.done?'disabled':'')+' aria-label="آخر صفحة قرأتها"><button type="button" class="btn" data-act="setpage" '+(k.done?'disabled':'')+'>تسجيل</button></span></div></div>'+
     '<div class="sec"><h3>الختمات</h3><button type="button" class="btn wide" data-act="newk">بدء ختمة جديدة</button></div>'+
+    '<div class="sec"><h3>مشاركة التقدم</h3><p class="sub">اعمل رابطًا فيه كل تقدمك وابعته لحد تاني، أو افتحه على جهازك التاني. من غير سيرفر ولا حساب — بس اعرف إن أي حد عنده الرابط يقدر يشوف بياناتك.</p><div class="row-btns"><button type="button" class="btn" data-act="share">شارك تقدمي</button><button type="button" class="btn" data-act="sharein">استيراد من رابط</button></div></div>'+
     '<div class="sec"><h3>النسخ الاحتياطي</h3><p class="sub">بياناتك محفوظة على جهازك فقط. صدّر نسخة احتياطية بين حين وآخر. النسخ القديمة تُستعاد دون مشكلة.</p><div class="row-btns"><button type="button" class="btn" data-act="export">تصدير نسخة احتياطية</button><button type="button" class="btn" data-act="import">استعادة نسخة احتياطية</button></div></div>'+
     '<div class="sec"><h3>إعادة الضبط</h3><button type="button" class="btn danger wide" data-act="reset">إعادة ضبط البيانات</button></div>',
     actions:[ { label:'تم', cls:'pri', onClick:function(){} } ],
@@ -717,21 +718,230 @@ function doExport(){
   setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
   toast('تم تصدير النسخة الاحتياطية.');
 }
+function applyImported(st, title, okLabel){
+  return confirmBox({ title:title, msg:'سيتم استبدال بياناتك الحالية بالكامل بالبيانات المستوردة ('+st.khatmahs.length+' ختمة، '+st.log.length+' تسجيل). هل تريد المتابعة؟', ok:okLabel||'استعادة' }).then(function(ok){
+    if(!ok) return false;
+    S=st; ui.amt=S.settings.lastAmount||S.settings.dailyTarget; save(); applyTheme(); ui.juz=null; ui.hd=null; renderAll();
+    toast('تمت الاستعادة بنجاح.');
+    return true;
+  });
+}
+/* sanitize() بتبدّل متغيرات الطبعة كأثر جانبي — فأي مسار استيراد بيرجّعها لحالتها بعدها */
+function trySanitize(obj){
+  var keepEd=ED, st=null;
+  try{ st=sanitize(obj); }catch(e){ st=null; }
+  useEd(keepEd);
+  return st;
+}
 function doImport(file){
   var r=new FileReader();
   r.onload=function(){
-    var st, keepEd=ED;
-    try{ st = sanitize(JSON.parse(r.result)); }
-    catch(e){ useEd(keepEd); toast('الملف غير صالح: لم يُتعرَّف على بيانات الرحلة.'); return; }
-    /* لو المستخدم لغى الاستعادة، نرجّع متغيرات الطبعة لحالتها — sanitize بتبدّلها كأثر جانبي */
-    useEd(keepEd);
-    confirmBox({ title:'استعادة نسخة احتياطية', msg:'سيتم استبدال بياناتك الحالية بالكامل ببيانات النسخة ('+st.khatmahs.length+' ختمة، '+st.log.length+' تسجيل). هل تريد المتابعة؟', ok:'استعادة' }).then(function(ok){
-      if(!ok) return;
-      S=st; ui.amt=S.settings.lastAmount||S.settings.dailyTarget; save(); applyTheme(); ui.juz=null; ui.hd=null; renderAll(); toast('تمت استعادة البيانات بنجاح.');
-    });
+    var parsed;
+    try{ parsed=JSON.parse(r.result); }catch(e){ toast('الملف غير صالح: تعذّر قراءة JSON.'); return; }
+    var st=trySanitize(parsed);
+    if(!st){ toast('الملف غير صالح: لم يُتعرَّف على بيانات الرحلة.'); return; }
+    applyImported(st,'استعادة نسخة احتياطية','استعادة');
   };
   r.onerror=function(){ toast('تعذّرت قراءة الملف.'); };
   r.readAsText(file);
+}
+
+/* =========================================================
+   أكواد المشاركة — انقل تقدمك برابط، من غير سيرفر ولا حساب
+   ---------------------------------------------------------
+   الفكرة: الحالة كلها → JSON مضغوط (deflate-raw لو المتصفح
+   بيدعمه، وإلا عادي) → base64url → يتحط في #s=... في الرابط.
+
+   ⚠️ الخصوصية: الكود ده فيه **كل** بياناتك. أي حد عنده الرابط
+   يقدر يشوفها. ما تحطّوش في مكان عام.
+
+   مفيش أي طلب شبكة هنا: CompressionStream API محلية في المتصفح.
+   ========================================================= */
+var SHARE_MAGIC = 'qd3';
+
+function b64u(bytes){
+  var s='', CH=0x8000;
+  for(var i=0;i<bytes.length;i+=CH) s+=String.fromCharCode.apply(null, bytes.subarray(i,i+CH));
+  return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function unb64u(str){
+  str=String(str).replace(/-/g,'+').replace(/_/g,'/');
+  while(str.length%4) str+='=';
+  var s=atob(str), out=new Uint8Array(s.length);
+  for(var i=0;i<s.length;i++) out[i]=s.charCodeAt(i);
+  return out;
+}
+function streamBytes(stream){
+  return new Promise(function(res,rej){
+    var r=stream.getReader(), chunks=[], total=0;
+    (function pump(){
+      r.read().then(function(x){
+        if(x.done){ var out=new Uint8Array(total), at=0;
+          chunks.forEach(function(c){ out.set(c,at); at+=c.length; }); return res(out); }
+        chunks.push(new Uint8Array(x.value)); total+=x.value.byteLength; pump();
+      }, rej);
+    })();
+  });
+}
+/* بنكتب في الـWritableStream بتاع الضغط مباشرة بدل Blob.stream() —
+   عشان ما نعتمدش على API مش موجودة في كل البيئات (jsdom مثلًا ما فيهاش Blob.stream). */
+function runCodec(Ctor, bytes){
+  var cs=new Ctor('deflate-raw');
+  var wr=cs.writable.getWriter();
+  wr.write(bytes); wr.close();
+  return streamBytes(cs.readable);
+}
+function zipBytes(bytes){
+  if(typeof CompressionStream!=='function') return Promise.resolve(null);
+  try{
+    return runCodec(CompressionStream, bytes)
+      .then(function(b){ return (b && b.length < bytes.length) ? b : null; }, function(){ return null; });
+  }catch(e){ return Promise.resolve(null); }
+}
+function unzipBytes(bytes){
+  if(typeof DecompressionStream!=='function') return Promise.reject(new Error('no-decompress'));
+  return runCodec(DecompressionStream, bytes);
+}
+
+/* الحالة → صيغة مضغوطة المفاتيح (أقصر في الرابط). فكّها بيرجع الشكل الكامل
+   اللي بيفهمه sanitize() — يعني نفس مسار التحقق بتاع الملف المستورد بالظبط. */
+function packState(){
+  var st=S.settings;
+  return { a:SHARE_MAGIC, e:st.edition,
+    g:[st.theme, st.palette, st.density, st.fontScale, st.goalMode, st.dailyTarget, st.targetDate, st.lastAmount],
+    k:S.khatmahs.map(function(k){ return [k.id,k.start,k.end,k.done?1:0,k.stopped?1:0,k.ed,k.read,k.last]; }),
+    l:S.log.map(function(e){ return [e.id,e.d,e.k,e.p,e.from,e.to,e.added,e.adj?1:0,e.lab]; }),
+    t:S.targets, o:S.onboarded?1:0 };
+}
+function unpackState(c){
+  if(!c || c.a!==SHARE_MAGIC || !Array.isArray(c.k) || !c.k.length) throw new Error('bad-share');
+  var g=Array.isArray(c.g)?c.g:[];
+  return { v:3, onboarded:c.o!==0,
+    settings:{ theme:g[0], palette:g[1], density:g[2], fontScale:g[3], goalMode:g[4],
+               dailyTarget:g[5], targetDate:g[6], edition:c.e, lastAmount:g[7] },
+    khatmahs:c.k.map(function(k){ return { id:k[0], start:k[1], end:k[2], done:!!k[3], stopped:!!k[4], ed:k[5], read:k[6], last:k[7] }; }),
+    log:(Array.isArray(c.l)?c.l:[]).map(function(e){ return { id:e[0], d:e[1], k:e[2], p:e[3], from:e[4], to:e[5], added:e[6], adj:!!e[7], lab:e[8] }; }),
+    targets:(c.t && typeof c.t==='object')?c.t:{} };
+}
+
+function makeShareCode(){
+  var json=JSON.stringify(packState());
+  var raw=new TextEncoder().encode(json);
+  return zipBytes(raw).then(function(z){
+    var packed = z ? z : raw;
+    return { code:(z?'1':'0')+b64u(packed), jsonBytes:raw.length, bytes:packed.length, zipped:!!z };
+  });
+}
+function extractCode(input){
+  var s=String(input==null?'':input).trim().replace(/\s+/g,'');
+  if(!s) return null;
+  var m=s.match(/[?&#]s=([01][A-Za-z0-9_\-]{8,})/i);
+  if(m) return m[1];
+  if(/^[01][A-Za-z0-9_\-]{8,}$/.test(s)) return s;
+  return null;
+}
+function decodeShareCode(code){
+  var flag=code.charAt(0), bytes;
+  try{ bytes=unb64u(code.slice(1)); }catch(e){ return Promise.reject(new Error('bad-base64')); }
+  var p = flag==='1' ? unzipBytes(bytes).catch(function(){ throw new Error('bad-zip'); })
+                     : Promise.resolve(bytes);
+  return p.then(function(b){ return unpackState(JSON.parse(new TextDecoder().decode(b))); });
+}
+function shareURL(code){
+  var base=location.href.split('#')[0];
+  return base+(base.indexOf('?')>-1?'&':'#')+'s='+code;
+}
+
+function copyText(text, done){
+  var ok=false;
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){ done(true); }, function(){ done(fallbackCopy(text)); });
+      return;
+    }
+  }catch(e){}
+  done(fallbackCopy(text));
+}
+function fallbackCopy(text){
+  try{
+    var ta=document.createElement('textarea');
+    ta.value=text; ta.setAttribute('readonly',''); ta.style.position='fixed'; ta.style.top='-1000px';
+    document.body.appendChild(ta); ta.select();
+    var ok=document.execCommand('copy');
+    ta.remove(); return !!ok;
+  }catch(e){ return false; }
+}
+
+function openShare(){
+  openModal({ title:'مشاركة التقدم', body:'<p class="sub">جارٍ تجهيز الرابط…</p>', actions:[] });
+  makeShareCode().then(function(r){
+    var url=shareURL(r.code);
+    var ratio = r.jsonBytes ? Math.round(100 - r.bytes*100/r.jsonBytes) : 0;
+    var longWarn = url.length>2000
+      ? '<p class="note" style="color:var(--danger)">الرابط طويل ('+url.length+' حرفًا). بعض التطبيقات (زي واتساب) بتقصّ الروابط الطويلة — لو حصل، انسخ <b>الكود وحده</b> من المربع الثاني وابعته.</p>'
+      : '<p class="note">طول الرابط '+url.length+' حرفًا — مناسب للمشاركة في أي تطبيق.</p>';
+    openModal({
+      title:'مشاركة التقدم',
+      body:'<p>ابعت الرابط ده لأي حد، أو افتحه على جهازك التاني، وهيقدر يستورد تقدمك كامل. <b>من غير سيرفر ولا حساب</b> — البيانات جوه الرابط نفسه.</p>'+
+        '<p class="note" style="color:var(--danger)">⚠️ الرابط يحتوي على <b>كل</b> بياناتك (الختمات والسجل والإعدادات). أي حد عنده الرابط يشوفها. ما تنشرهوش في مكان عام.</p>'+
+        '<div class="fld"><span>الرابط كامل</span><input class="inp mono" type="text" id="shUrl" readonly value="'+url.replace(/"/g,'&quot;')+'" dir="ltr" aria-label="رابط المشاركة"></div>'+
+        '<div class="row-btns"><button type="button" class="btn pri" data-act="sharecopyurl">نسخ الرابط</button></div>'+
+        '<div class="fld" style="margin-top:10px"><span>الكود وحده (لو الرابط اتقصّ)</span><textarea class="inp mono codebox" id="shCode" readonly dir="ltr" rows="4" aria-label="كود المشاركة">'+r.code+'</textarea></div>'+
+        '<div class="row-btns"><button type="button" class="btn" data-act="sharecopycode">نسخ الكود</button></div>'+
+        '<p class="note">'+(r.zipped?'مضغوط (وفّر '+ratio+'٪): ':'غير مضغوط (المتصفح لا يدعم الضغط): ')+r.jsonBytes+' بايت → '+r.bytes+' بايت → '+r.code.length+' حرفًا.</p>'+
+        longWarn+
+        '<p class="note">اللي هيتفتح عنده الرابط هيشوف رسالة تسأله لو عايز يستورد التقدم — بياناته هو ما بتتغيّرش من غير موافقته.</p>',
+      actions:[ { label:'تم', cls:'pri', onClick:function(){} } ],
+      onOpen:function(sh){
+        var u=$('#shUrl',sh);
+        if(u){ u.addEventListener('focus',function(){ try{ u.select(); }catch(e){} }); }
+        var c=$('#shCode',sh);
+        if(c){ c.addEventListener('focus',function(){ try{ c.select(); }catch(e){} }); }
+      }
+    });
+  }).catch(function(e){ toast('تعذّر إنشاء رابط المشاركة.'); });
+}
+
+function openShareImport(prefill){
+  openModal({
+    title:'استيراد من رابط أو كود',
+    body:'<p>الصق الرابط أو الكود اللي وصلك. هيُطلب منك تأكيد قبل أي تغيير.</p>'+
+      '<div class="fld"><span>الرابط أو الكود</span><textarea class="inp mono codebox" id="shIn" dir="ltr" rows="5" placeholder="#s=1eJyLVrJSKs5ILUpVslIKS8wpTgUA…" aria-label="رابط أو كود المشاركة">'+String(prefill||'').replace(/</g,'&lt;')+'</textarea></div>'+
+      '<p class="note" id="shInNote"></p>'+
+      '<p class="note">تقدر كمان تستورد من ملف نسخة احتياطية من قسم «النسخ الاحتياطي» في الإعدادات.</p>',
+    actions:[ { label:'استيراد', cls:'pri', keep:true, onClick:function(sh){
+        var code=extractCode($('#shIn',sh).value);
+        var note=$('#shInNote',sh);
+        if(!code){ note.textContent='ما عرفتش أستخرج كودًا صالحًا. تأكد إنك نسخت الرابط كله أو الكود من أول حرف.'; note.style.color='var(--danger)'; return; }
+        note.textContent='جارٍ فكّ الكود…'; note.style.color='';
+        decodeShareCode(code).then(function(obj){
+          var st=trySanitize(obj);
+          if(!st){ note.textContent='الكود فكّ بنجاح لكن البيانات جواه غير صالحة أو ناقصة.'; note.style.color='var(--danger)'; return; }
+          dismissCb=null; closeModal();
+          applyImported(st,'استيراد تقدم مشترك','استيراد');
+        }).catch(function(e){
+          note.textContent='الكود تالف أو ناقص (ممكن يكون اتقصّ في رسالة). جرّب تنسخه تاني، أو استخدم ملف النسخة الاحتياطية.';
+          note.style.color='var(--danger)';
+        });
+      } } ],
+    onOpen:function(sh){ var t=$('#shIn',sh); if(t && !prefill) t.focus(); }
+  });
+}
+
+/* لو التطبيق اتفتح ورابط فيه #s=... — اعرض الاستيراد مرة واحدة ونضّف الرابط */
+function checkShareInURL(){
+  var code=null;
+  try{ code=extractCode(location.hash||''); if(!code) code=extractCode(location.search||''); }catch(e){}
+  if(!code) return;
+  var clean=function(){ try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){} };
+  decodeShareCode(code).then(function(obj){
+    var st=trySanitize(obj);
+    if(!st){ toast('الرابط يحتوي على كود مشاركة تالف — تم تجاهله.'); clean(); return; }
+    confirmBox({ title:'تقدم مشترك في الرابط', msg:'الرابط ده فيه تقدم قراءة مشارك ('+st.khatmahs.length+' ختمة، '+st.log.length+' تسجيل). استيراده <b>هيستبدل</b> بياناتك الحالية بالكامل. هل تستورده؟', ok:'استيراد' }).then(function(ok){
+      clean();
+      if(ok){ S=st; ui.amt=S.settings.lastAmount||S.settings.dailyTarget; save(); applyTheme(); ui.juz=null; ui.hd=null; renderAll(); toast('تم استيراد التقدم المشترك.'); }
+    });
+  }).catch(function(){ toast('الرابط يحتوي على كود مشاركة تالف — تم تجاهله.'); clean(); });
 }
 function askReset(){
   confirmBox({ title:'إعادة ضبط البيانات', msg:'سيتم حذف كل بياناتك نهائيًا: القراءة والختمات والإعدادات. لا يمكن التراجع عن ذلك. يُنصح بتصدير نسخة احتياطية أولًا.', ok:'حذف كل البيانات', danger:true, check:'أفهم أن البيانات ستُحذف نهائيًا' }).then(function(ok){
@@ -1192,6 +1402,10 @@ var ACT = {
   newk:askNewKhatmah,
   export:doExport,
   import:function(){ $('#fileIn').click(); },
+  share:openShare,
+  sharein:function(){ openShareImport(); },
+  sharecopyurl:function(){ var u=$('#shUrl'); if(u) copyText(u.value,function(ok){ toast(ok?'تم نسخ الرابط.':'تعذّر النسخ — حدّد الرابط وانسخه يدويًا.'); }); },
+  sharecopycode:function(){ var c=$('#shCode'); if(c) copyText(c.value,function(ok){ toast(ok?'تم نسخ الكود.':'تعذّر النسخ — حدّد الكود وانسخه يدويًا.'); }); },
   reset:askReset,
   setpage:function(){ var v=$('#sPage'); if(v && setBase(v.value) && !curK().done) closeModal(); },
   surahToggle:function(){ ui.surahAll=!ui.surahAll; renderSurah(); },
@@ -1305,8 +1519,11 @@ applyTheme();
 })();
 renderAll();
 relayout(true);                       /* القياس الأول قد يختلف بعد تطبيق الخطوط/الكثافة */
-if(!S.onboarded) setTimeout(openOnboarding,350);
+/* لو الرابط فيه كود مشاركة، هو أولى من شاشة الترحيب */
+var HAS_SHARE = /[?&#]s=[01][A-Za-z0-9_\-]{8,}/i.test((location.hash||'')+(location.search||''));
+if(!S.onboarded && !HAS_SHARE) setTimeout(openOnboarding,350);
 save();
+if(HAS_SHARE) setTimeout(checkShareInURL,450);
 /* PWA: manifest + service worker للتشغيل دون اتصال والتثبيت على الشاشة الرئيسية.
    بنحقنهم من JavaScript فقط عند العمل عبر http(s) — عشان الملف الواحد لو اتفتح من
    file:// ما يطلبش ملفات مش موجودة ويطلّع أخطاء في الكونسول. */

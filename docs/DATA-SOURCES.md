@@ -287,7 +287,7 @@ ok(E.JS.every((v,i) => i===0 || v > E.JS[i-1]),    'بدايات الأجزاء 
 1. `python3 tools/verify_editions.py -v`
 2. `python3 tools/build.py --check` — يفشل لو `index.html` مش محدّث
 3. `node tools/gen_madinah.mjs` — يفشل لو بيانات المدينة اتغيّرت عن مصدرها
-4. الاختبارات الأربعة (204 فحص)
+4. الاختبارات الخمسة (273 فحصًا)
 5. فحص استقلال `index.html` (مفيش موارد خارجية)
 
 > `gen_shamarly.py` **مش** في الـCI لأنه بينزّل 9 ميجابايت. شغّله يدويًا عند الحاجة.
@@ -450,7 +450,7 @@ return clamp(Math.round(B.RS[r] + clamp(f,0,1) * (B.RE[r] - B.RS[r])), B.P0, B.N
    ```bash
    python3 tools/verify_editions.py -v   # لازم ✓
    python3 tools/build.py                # إعادة البناء
-   npm test                              # 204 فحص
+   npm test                              # 273 فحصًا
    ```
 5. **أضف مراجعها المطبوعة** في `verify_editions.py` → `ANCHORS` و`CANON_JUZ`.
 

@@ -184,6 +184,12 @@ button{cursor:pointer;-webkit-appearance:none;appearance:none}
 .fld input[type=date],.fld input[type=number],.inp{min-height:46px;border-radius:12px;border:1px solid var(--line);background:var(--card);padding:0 12px;min-width:0}
 select.inp{width:100%;text-overflow:ellipsis}
 .fld input:focus,.inp:focus{border-color:var(--accent)}
+/* حقول الكود والمشاركة (روابط/أكواد طويلة بالاتجاه اللاتيني) */
+textarea.inp{width:100%;padding:10px 12px;font:inherit;color:inherit;line-height:1.6;resize:vertical;min-height:76px}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;font-size:.78rem;direction:ltr;text-align:left;letter-spacing:.02em}
+.codebox{word-break:break-all;overflow-wrap:anywhere;max-height:190px}
+input.inp[readonly],textarea.inp[readonly]{background:var(--soft-2);color:var(--muted);cursor:text}
+input.inp.mono{padding-block:10px}
 .stepper.sm{margin:0;gap:8px}
 .stepper.sm .step{width:46px;height:46px;font-size:1.4rem;border-radius:12px}
 .stepper.sm input{width:70px;text-align:center;font-weight:800;font-size:1.2rem}

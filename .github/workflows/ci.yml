@@ -42,6 +42,7 @@ jobs:
           node tests/test3.cjs
           node tests/test4.cjs
           node tests/test5.cjs
+          node tests/test6.cjs
 
       - name: No external resources in the built file
         run: python3 tools/check_offline.py index.html
